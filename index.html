@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<title>Casino Luck 8 </title>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Gemini Grand Casino - Perfect Edition 2026</title>
+    <style>
+        :root { --gold: #ffd700; --red: #e74c3c; --green: #2ecc71; --dark: #111; --card: #1a1a1a; }
+        body { font-family: 'Segoe UI', sans-serif; background: #000; color: white; margin: 0; overflow: hidden; height: 100vh; }
+
+        /* SCREENS */
+        .overlay { position: fixed; width: 100%; height: 100%; background: radial-gradient(circle, #1a2a6c, #b21f1f, #fdbb2d); display: flex; justify-content: center; align-items: center; z-index: 5000; }
+        .box { background: rgba(0, 0, 0, 0.95); padding: 30px; border-radius: 20px; border: 3px solid var(--gold); text-align: center; min-width: 320px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        
+        /* UI ELEMENTS */
+        input { display: block; width: 85%; padding: 12px; margin: 10px auto; border-radius: 5px; border: none; text-align: center; font-size: 1rem; }
+        .btn { background: var(--gold); color: black; padding: 12px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin: 5px; transition: 0.2s; }
+        .btn:hover { transform: scale(1.05); background: white; }
+        .btn:disabled { background: #555; cursor: not-allowed; }
+        
+        .navbar { background: #111; padding: 15px 25px; border-bottom: 2px solid var(--gold); display: flex; justify-content: space-between; align-items: center; }
+        .profile-trigger { font-size: 2rem; cursor: pointer; transition: 0.3s; }
+
+        .view { display: none; padding: 20px; text-align: center; height: 82vh; overflow-y: auto; }
+        .active { display: block; }
+
+        /* MODALS */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 6000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; text-align: left; border-top: 1px solid #444; padding-top: 10px; }
+
+        /* GAMES */
+        .slot-container { display: flex; justify-content: center; gap: 10px; margin: 20px; }
+        .reel { width: 80px; height: 100px; background: white; color: black; font-size: 3rem; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 4px solid #444; }
+        .wheel-box { position: relative; width: 220px; height: 220px; margin: 15px auto; border: 8px solid #5d4037; border-radius: 50%; }
+        .wheel-img { width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(#2ecc71 0% 2.7%, #111 2.7% 5.4%, #e74c3c 5.4% 100%); transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1); }
+        .pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 25px; height: 25px; background: var(--gold); clip-path: polygon(50% 100%, 0 0, 100% 0); z-index: 10; }
+        .card-val { background: white; color: black; padding: 10px; border-radius: 5px; font-weight: bold; margin: 3px; display: inline-block; min-width: 35px; }
+    </style>
+</head>
+<body>
+
+    <div id="lang-screen" class="overlay">
+        <div class="box">
+            <h1 style="color:var(--gold)">SELECT LANGUAGE</h1>
+            <button class="btn" onclick="initApp('de')">DEUTSCH</button>
+            <button class="btn" onclick="initApp('en')">ENGLISH</button>
+            <button class="btn" onclick="initApp('fr')">FRANÇAIS</button>
+        </div>
+    </div>
+
+    <div id="login-screen" class="overlay" style="display:none">
+        <div class="box">
+            <h1 id="t-login">CASINO LOGIN</h1>
+            <input type="text" id="user" placeholder="User">
+            <input type="password" id="pw" placeholder="Password">
+            <button class="btn" id="b-enter" onclick="login()" style="width:100%">ENTER</button>
+        </div>
+    </div>
+
+    <div id="profile-modal" class="modal">
+        <div class="box">
+            <h2 id="t-profile">PROFIL</h2>
+            <div class="stat-grid">
+                <span id="s-played">Spiele:</span> <span id="val-played">0</span>
+                <span id="s-won">Gewonnen:</span> <span id="val-won">0</span>
+                <span id="s-total">Geld:</span> <span id="val-money">0</span>
+            </div>
+            <div id="vip-badge" style="color:var(--gold); font-weight:bold; margin-bottom:10px;"></div>
+            <hr>
+            <p id="t-audio">Audio</p>
+            <label>Music</label><input type="range" id="vol-m" min="0" max="1" step="0.1" value="0.5" oninput="updateAudio()">
+            <hr>
+            <p id="t-change-lang">Sprache:</p>
+            <button class="btn" onclick="changeLang('de')">DE</button>
+            <button class="btn" onclick="changeLang('en')">EN</button>
+            <button class="btn" onclick="changeLang('fr')">FR</button>
+            <br><button class="btn" style="background:gray; margin-top:20px;" onclick="toggleProfile()">CLOSE</button>
+        </div>
+    </div>
+
+    <div id="app" style="display:none">
+        <div class="navbar">
+            <div style="font-size: 1.6rem; color: var(--gold); font-weight: bold;">💰 <span id="display-money">0</span> €</div>
+            <div class="profile-trigger" onclick="toggleProfile()">👤</div>
+        </div>
+
+        <div id="v-menu" class="view active">
+            <h1 id="t-welcome">Willkommen</h1>
+            <div style="display: flex; flex-wrap: wrap; justify-content: center;">
+                <button class="btn" style="width: 140px; height: 100px;" onclick="show('v-slots')">🎰 SLOTS</button>
+                <button class="btn" style="width: 140px; height: 100px;" onclick="show('v-roul')">🎡 ROULETTE</button>
+                <button class="btn" style="width: 140px; height: 100px;" onclick="show('v-bj')">🃏 BLACKJACK</button>
+                <button class="btn" style="width: 140px; height: 100px;" onclick="show('v-flip')">🪙 COIN</button>
+                <button class="btn" style="width: 140px; height: 100px;" onclick="show('v-bar')">🍸 BAR</button>
+            </div>
+            <button class="btn" style="background: #e74c3c; margin-top: 30px;" onclick="location.reload()">LOGOUT</button>
+        </div>
+
+        <div id="v-slots" class="view">
+            <h1 id="t-slots">Slots</h1>
+            <div class="slot-container">
+                <div class="reel" id="r1">🎰</div><div class="reel" id="r2">🎰</div><div class="reel" id="r3">🎰</div>
+            </div>
+            <button class="btn" id="slot-btn" onclick="playSlots()">SPIN (10€)</button>
+            <br><button class="btn" style="background:gray" onclick="show('v-menu')">BACK</button>
+        </div>
+
+        <div id="v-roul" class="view">
+            <h1>Roulette</h1>
+            <div class="wheel-box"><div class="pointer"></div><div id="wheel" class="wheel-img"></div></div>
+            <p id="roul-msg">Einsatz: 20€</p>
+            <button class="btn" style="background:red" onclick="playRoul('red')">RED</button>
+            <button class="btn" style="background:#222; color:white" onclick="playRoul('black')">BLACK</button>
+            <button class="btn" style="background:green" onclick="playRoul('0')">0 (36x)</button>
+            <br><button class="btn" style="background:gray" onclick="show('v-menu')">BACK</button>
+        </div>
+
+        <div id="v-bj" class="view">
+            <h1>Blackjack</h1>
+            <div style="background:#076324; padding:20px; border-radius:15px; margin:10px auto; max-width:400px; border:3px solid #3d2b1f;">
+                <p>Dealer: <span id="d-c"></span></p><hr>
+                <p>You: <span id="p-c"></span> (<span id="p-v">0</span>)</p>
+            </div>
+            <button id="bj-s" class="btn" onclick="startBJ()">START (50€)</button>
+            <button id="bj-h" class="btn" style="display:none" onclick="bjHit()">HIT</button>
+            <button id="bj-st" class="btn" style="display:none" onclick="bjStand()">STAND</button>
+            <p id="bj-msg" style="font-weight:bold"></p>
+            <br><button class="btn" style="background:gray" onclick="show('v-menu')">BACK</button>
+        </div>
+
+        <div id="v-flip" class="view">
+            <h1>Coin Flip</h1>
+            <div id="coin-anim" style="font-size: 6rem; margin: 20px;">🪙</div>
+            <button class="btn" onclick="playFlip('Kopf')">KOPF</button>
+            <button class="btn" onclick="playFlip('Zahl')">ZAHL</button>
+            <p id="flip-msg"></p>
+            <br><button class="btn" style="background:gray" onclick="show('v-menu')">BACK</button>
+        </div>
+
+        <div id="v-bar" class="view">
+            <h1>🍸 Casino Bar</h1>
+            <div style="display:flex; flex-wrap:wrap; justify-content:center;">
+                <button class="btn" onclick="orderBar('Cola', '5€')">🥤 Cola</button>
+                <button class="btn" onclick="orderBar('Bier', '8€')">🍺 Bier</button>
+                <button class="btn" onclick="orderBar('Champagner', '150€')">🍾 Champagner</button>
+                <button class="btn" onclick="orderBar('Burger', '15€')">🍔 Burger</button>
+            </div>
+            <br><button class="btn" style="background:gray" onclick="show('v-menu')">BACK</button>
+        </div>
+    </div>
+
+    <audio id="bg-music" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+
+    <script>
+        let balance = 0, isOwner = false, curUser = "", lang = 'de', canPlay = true;
+        let stats = { played: 0, won: 0 };
+        const music = document.getElementById('bg-music');
+
+        const texts = {
+            de: { login: "CASINO LOGIN", enter: "BETRETEN", welcome: "WILLKOMMEN", profile: "PROFIL", played: "Spiele:", won: "Gewonnen:", total: "Geld:", change: "Sprache:", slots: "Spielautomat", audio: "Audio & Musik", vip: "VIP STATUS: AKTIV" },
+            en: { login: "CASINO LOGIN", enter: "ENTER", welcome: "WELCOME", profile: "PROFILE", played: "Played:", won: "Won:", total: "Balance:", change: "Language:", slots: "Slot Machine", audio: "Audio & Music", vip: "VIP STATUS: ACTIVE" },
+            fr: { login: "CONNEXION", enter: "ENTRER", welcome: "BIENVENUE", profile: "PROFIL", played: "Joué:", won: "Gagné:", total: "Argent:", change: "Langue:", slots: "Slots", audio: "Audio & Musique", vip: "STATUT VIP: ACTIF" }
+        };
+
+        function initApp(l) {
+            lang = l; updateUI();
+            document.getElementById('lang-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+
+        function changeLang(l) { lang = l; updateUI(); }
+
+        function updateUI() {
+            document.getElementById('t-login').innerText = texts[lang].login;
+            document.getElementById('b-enter').innerText = texts[lang].enter;
+            document.getElementById('t-welcome').innerText = texts[lang].welcome;
+            document.getElementById('t-profile').innerText = texts[lang].profile;
+            document.getElementById('s-played').innerText = texts[lang].played;
+            document.getElementById('s-won').innerText = texts[lang].won;
+            document.getElementById('s-total').innerText = texts[lang].total;
+            document.getElementById('t-change-lang').innerText = texts[lang].change;
+            document.getElementById('t-audio').innerText = texts[lang].audio;
+            if(isOwner) document.getElementById('vip-badge').innerText = texts[lang].vip;
+        }
+
+        function login() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pw').value;
+            if(!u) return;
+            curUser = u;
+            isOwner = (u.toLowerCase() === "boss" && p === "cool123");
+            balance = isOwner ? 9999999 : (parseInt(localStorage.getItem('bal_'+u)) || 250);
+            stats.played = parseInt(localStorage.getItem('stat_p_'+u)) || 0;
+            stats.won = parseInt(localStorage.getItem('stat_w_'+u)) || 0;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            music.volume = 0.5; music.play().catch(() => console.log("Audio requires interaction"));
+            update(); updateUI();
+        }
+
+        function update() {
+            document.getElementById('display-money').innerText = isOwner ? "∞" : balance;
+            document.getElementById('val-money').innerText = isOwner ? "∞" : balance + " €";
+            document.getElementById('val-played').innerText = stats.played;
+            document.getElementById('val-won').innerText = stats.won;
+            if(!isOwner && curUser) {
+                localStorage.setItem('bal_'+curUser, balance);
+                localStorage.setItem('stat_p_'+curUser, stats.played);
+                localStorage.setItem('stat_w_'+curUser, stats.won);
+            }
+        }
+
+        function show(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function toggleProfile() {
+            const m = document.getElementById('profile-modal');
+            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function updateAudio() { music.volume = document.getElementById('vol-m').value; }
+
+        // --- GAMES ---
+        function playSlots() {
+            if(!isOwner && balance < 10) return;
+            if(!canPlay) return;
+            canPlay = false; if(!isOwner) balance -= 10; stats.played++;
+            const s = ['💎','🍒','7️⃣','⭐','🍋'];
+            let count = 0;
+            const iv = setInterval(() => {
+                document.getElementById('r1').innerText = s[Math.floor(Math.random()*5)];
+                document.getElementById('r2').innerText = s[Math.floor(Math.random()*5)];
+                document.getElementById('r3').innerText = s[Math.floor(Math.random()*5)];
+                if(++count > 15) {
+                    clearInterval(iv); canPlay = true;
+                    if(document.getElementById('r1').innerText === document.getElementById('r2').innerText && 
+                       document.getElementById('r2').innerText === document.getElementById('r3').innerText) {
+                        balance += 100; stats.won++; alert("JACKPOT! +100€");
+                    }
+                    update();
+                }
+            }, 80);
+        }
+
+        function playRoul(bet) {
+            if(!isOwner && balance < 20) return;
+            if(!canPlay) return;
+            canPlay = false; if(!isOwner) balance -= 20; stats.played++;
+            const deg = Math.floor(Math.random() * 360) + 2160;
+            document.getElementById('wheel').style.transform = `rotate(${deg}deg)`;
+            setTimeout(() => {
+                canPlay = true;
+                const win = Math.random() > (bet === '0' ? 0.95 : 0.52);
+                if(win) { balance += (bet === '0' ? 720 : 40); stats.won++; alert("WIN!"); }
+                update();
+            }, 4000);
+        }
+
+        let pHand = [], dHand = [];
+        function startBJ() {
+            if(!isOwner && balance < 50) return;
+            if(!isOwner) balance -= 50; stats.played++;
+            pHand = [rC(), rC()]; dHand = [rC()];
+            document.getElementById('bj-s').style.display = 'none';
+            document.getElementById('bj-h').style.display = 'inline-block';
+            document.getElementById('bj-st').style.display = 'inline-block';
+            document.getElementById('bj-msg').innerText = ""; renderBJ();
+        }
+        function rC() { return Math.floor(Math.random()*10)+2; }
+        function renderBJ() {
+            const sum = h => h.reduce((a,b)=>a+b,0);
+            document.getElementById('p-c').innerHTML = pHand.map(c=>`<span class="card-val">${c}</span>`).join('');
+            document.getElementById('d-c').innerHTML = dHand.map(c=>`<span class="card-val">${c}</span>`).join('');
+            document.getElementById('p-v').innerText = sum(pHand);
+            if(sum(pHand) > 21) endBJ("BUST!");
+        }
+        function bjHit() { pHand.push(rC()); renderBJ(); }
+        function bjStand() {
+            while(dHand.reduce((a,b)=>a+b,0) < 17) dHand.push(rC());
+            renderBJ();
+            const ps = pHand.reduce((a,b)=>a+b,0), ds = dHand.reduce((a,b)=>a+b,0);
+            if(ds > 21 || ps > ds) { balance += 100; stats.won++; endBJ("WIN!"); }
+            else if(ps === ds) { balance += 50; endBJ("PUSH"); }
+            else endBJ("LOSE");
+        }
+        function endBJ(m) {
+            document.getElementById('bj-msg').innerText = m;
+            document.getElementById('bj-s').style.display = 'inline-block';
+            document.getElementById('bj-h').style.display = 'none';
+            document.getElementById('bj-st').style.display = 'none';
+            update();
+        }
+
+        function playFlip(choice) {
+            if(!isOwner && balance < 10) return;
+            if(!isOwner) balance -= 10; stats.played++;
+            document.getElementById('coin-anim').innerText = "🌀";
+            setTimeout(() => {
+                const res = Math.random() > 0.5 ? 'Kopf' : 'Zahl';
+                document.getElementById('coin-anim').innerText = res === 'Kopf' ? '🪙' : '💰';
+                if(choice === res) { balance += 20; stats.won++; document.getElementById('flip-msg').innerText = "WIN!"; }
+                else { document.getElementById('flip-msg').innerText = "LOSE!"; }
+                update();
+            }, 600);
+        }
+
+        function orderBar(n, p) {
+            const t = prompt("Table Number / Tischnummer:");
+            if(t) alert(`Order confirmed: ${n} (${p}) to table ${t}. This is a VIP service, enjoy!`);
+        }
+    </script>
+</body>
+</html>
